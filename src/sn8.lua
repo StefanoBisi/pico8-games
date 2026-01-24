@@ -3,14 +3,20 @@ function hit(p1, p2)
 end
 
 function generate_fruit()
+  -- The fruit kind is used also to determine its sprite
   fruit={}
-  fruit.type = (
-    (score>0 and score%5 == 0)
-    and 3 or 2
-  )
+  fruit.kind = 2 -- red kind, the default
+  golden_fruit_counter = 0
+  if score > 0 and score % 9 == 0 then
+    -- Sometimes a golden fruit might be generated
+    if (flr(rnd(9)) +1) % 3 == 0 then
+      fruit.kind = 3
+      golden_fruit_counter = 150 -- Roughly 5 seconds to get the golden fruit
+    end
+  end
   local gen_pos = function()
-    -- Randomizes the position of the next fruit.
-    -- Each game cell is 8 pixels wide and tall.
+    -- Randomizes the position of the next fruit
+    -- Each game cell is 8 pixels wide and tall
     -- The border cells (Those that contain x/y at value 0/127) should be excluded
     fruit.x=(flr(rnd(13)) + 1)*8
     fruit.y=(flr(rnd(13)) + 1)*8
@@ -55,7 +61,7 @@ function _update()
   -- check input
   -- If a button is pressed, it changes direction
   -- only if there is not a tail block in the next cell
-  -- the head should go.
+  -- the head should go
   --    left
   if btn(0) and tail[1].x >= head.x then
     dir={x=-8, y=0}
@@ -75,7 +81,7 @@ function _update()
   -- update the position
   -- Increases the move counter
   -- and if it reached the speed goal,
-  -- moves the snake.
+  -- moves the snake
   move_counter += 1
   if move_counter >= speed then
     move_counter=0
@@ -111,17 +117,25 @@ function _update()
   )
   -- fruit check
   if hit(head, fruit) then
-    -- Red fruits (sprite type 2) grant 3 point
-    -- Yellow fruits (sprite type 3) grant 9 point
-    score += ((fruit.type==2)
+    -- Red fruits (sprite 2) grant 3 point
+    -- Gellow fruits (sprite 3) grant 9 point
+    score += ((fruit.kind==2)
       and 3 or 9
     )
     generate_fruit()
-    -- The speed value is reduced at each tick by 0.5.
-    -- This way it is increased each 2 ticks.
-    -- Its value cannot go below 2.
+    -- The speed value is reduced at each tick by 0.5
+    -- This way it is increased each 2 ticks
+    -- Its value cannot go below 2
     if speed > 2 then speed -= 0.5 end
     add_tail=true
+  end
+  -- If a golden fruit is on the field,
+  -- decreases its counter.
+  -- When it reaches 0,
+  -- a new fruit is generated
+  if golden_fruit_counter > 0 then
+    golden_fruit_counter -= 1
+    if golden_fruit_counter == 0 then generate_fruit() end
   end
 end
 
@@ -151,6 +165,6 @@ function _draw()
   
   -- draw fruit
   if fruit then
-    spr(fruit.type, fruit.x, fruit.y)
+    spr(fruit.kind, fruit.x, fruit.y)
   end
 end
