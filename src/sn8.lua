@@ -38,8 +38,57 @@ function generate_fruit()
   end
 end
 
+function init_game(level)
+  in_game = true
+  gameover = false
+
+  head={x=16, y=32}
+  tail={}
+  add(tail, {x=16,y=24})
+  add(tail, {x=24,y=24})
+  add(tail, {x=32,y=24})
+  snake_direction={x=0, y=8}
+  speed=11
+  move_counter=0
+  score=0
+
+  walls={} -- level 1
+  if level == 2 then
+    for i=0,120,8 do
+      -- top line of walls
+      add(walls, {x=i, y=gameboard.top})
+    end
+    for i=0,120,8 do
+      -- bottom line of walls
+      add(walls, {x=i, y=gameboard.bottom-7})
+    end
+  elseif level == 3 then
+    for i=0,120,8 do
+      -- top line of walls
+      add(walls, {x=i, y=gameboard.top})
+    end
+    for i=0,120,8 do
+      -- bottom line of walls
+      add(walls, {x=i, y=gameboard.bottom-7})
+    end
+    for i=8,112,8 do
+      -- left line of walls
+      add(walls, {x=gameboard.left, y=i})
+    end
+    for i=8,112,8 do
+      -- right line of walls
+      add(walls, {x=gameboard.right-7, y=i})
+    end
+  elseif level == 4 then
+
+  end
+
+  generate_fruit()
+end
+
 function _init()
   -- Graphics definitions
+  logo_sprite=10
   snake_head_h_sprite = 0
   snake_head_v_sprite = 7
   snake_body_h_sprite = 1
@@ -50,33 +99,24 @@ function _init()
   red_fruit_sprite = 2
   golden_fruit_sprite = 3
   wall_sprite = 5
-  header_color = 1
-  bg_color = 11
+  header_color = 1 -- dark blue
+  bg_color = 11 -- light green
   header_rect={left=0, top=0, right=127, bottom=7}
+
+  -- Menu
+  menu = {
+    elements={"easy", "medium", "hard", "labirinth"},
+    selected=1,
+    bg_col=11, -- light green
+    bg_sel_col=11,
+    font_col=1, -- dark blue
+    font_sel_col=8 -- red
+  }
 
   -- Game components
   gameboard={left= 0, top=8, right=127, bottom=127}
-  head={x=16, y=32}
-  tail={}
-  add(tail, {x=16,y=24})
-  add(tail, {x=24,y=24})
-  add(tail, {x=32,y=24})
-  snake_direction={x=0, y=8}
-  speed=11
-  move_counter=0
-  score=0
-  walls={}
-  for i=0,120,8 do
-    -- top line of walls
-    add(walls, {x=i, y=gameboard.top})
-  end
-  for i=0,120,8 do
-    -- bottom line of walls
-    add(walls, {x=i, y=gameboard.bottom-7})
-  end
-
-  -- Game initialization
-  generate_fruit()
+  gameover = false
+  in_game = false
 end
 
 function copy_pos(source, dest)
@@ -94,19 +134,19 @@ function update_game()
   -- only if there is not a tail block in the next cell
   -- the head should go
   --    left
-  if btn(0) and tail[1].x >= head.x then
+  if btnp(⬅️) and tail[1].x >= head.x then
     snake_direction={x=-8, y=0}
   end
   --    right
-  if btn(1) and tail[1].x <= head.x then
+  if btnp(➡️) and tail[1].x <= head.x then
     snake_direction={x=8, y=0}
   end
   --    up
-  if btn(2) and tail[1].y >= head.y then
+  if btnp(⬆️) and tail[1].y >= head.y then
     snake_direction={x=0, y=-8}
   end
   --    down
-  if btn(3) and tail[1].y <= head.y then
+  if btnp(⬇️) and tail[1].y <= head.y then
     snake_direction={x=0, y=8}
   end
   -- update the position
@@ -175,7 +215,17 @@ function update_game()
 end
 
 function _update()
-  update_game()
+  if in_game then
+    update_game()
+    if gameover then
+      in_game = false
+    end
+  else
+    s = update_menu(menu)
+    if s then
+      init_game(s)
+    end
+  end
 end
 
 function draw_snake()
@@ -269,19 +319,24 @@ function _draw()
   if gameover then
     print("gameover", 46, 40, 8)
     print("score: "..score, 46, 50, 12)
-    return
   end
 
+  if in_game then
     -- print points
-  print("score: "..score, 1, 1, 12)
+    print("score: "..score, 1, 1, 12)
 
-  draw_snake()
-  -- draw fruit
-  if fruit then
-    spr(fruit.kind, fruit.x, fruit.y)
+    draw_snake()
+    -- draw fruit
+    if fruit then
+      spr(fruit.kind, fruit.x, fruit.y)
+    end
+    -- draw walls
+    foreach (walls, function (wall)
+      spr(wall_sprite, wall.x, wall.y)
+    end)
+  else
+    spr(logo_sprite, 52, 20, 3, 2)
+    print("select game mode:", 29, 84, 1)
+    draw_menu(menu, {x=45,y=92})
   end
-  -- draw walls
-  foreach (walls, function (wall)
-    spr(wall_sprite, wall.x, wall.y)
-  end)
 end
