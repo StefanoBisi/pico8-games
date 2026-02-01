@@ -22,10 +22,13 @@ function generate_fruit()
     fruit.y=(flr(rnd(13)) + 1)*8
   end
   local check_pos = function()
-    -- Checks whether the generated position overlaps the snake
+    -- Checks whether the generated position overlaps the snake or a wall
     if hit(fruit, head) then return true end
     for i=1, #tail do
       if hit(fruit, tail[i]) then return true end
+    end
+    for i=1, #walls do
+      if hit(fruit, walls[i]) then return true end
     end
     return false 
   end
@@ -36,6 +39,7 @@ function generate_fruit()
 end
 
 function _init()
+  -- Graphics definitions
   snake_head_h_sprite = 0
   snake_head_v_sprite = 7
   snake_body_h_sprite = 1
@@ -46,6 +50,12 @@ function _init()
   red_fruit_sprite = 2
   golden_fruit_sprite = 3
   wall_sprite = 5
+  header_color = 1
+  bg_color = 11
+  header_rect={left=0, top=0, right=127, bottom=7}
+
+  -- Game components
+  gameboard={left= 0, top=8, right=127, bottom=127}
   head={x=16, y=32}
   tail={}
   add(tail, {x=16,y=24})
@@ -55,6 +65,17 @@ function _init()
   speed=11
   move_counter=0
   score=0
+  walls={}
+  for i=0,120,8 do
+    -- top line of walls
+    add(walls, {x=i, y=gameboard.top})
+  end
+  for i=0,120,8 do
+    -- bottom line of walls
+    add(walls, {x=i, y=gameboard.bottom-7})
+  end
+
+  -- Game initialization
   generate_fruit()
 end
 
@@ -109,6 +130,10 @@ function update_game()
     -- update head position
     head.x += snake_direction.x
     head.y += snake_direction.y
+    if head.x < gameboard.left then head.x = gameboard.right - 7 end
+    if head.x > gameboard.right then head.x = gameboard.left end
+    if head.y < gameboard.top then head.y = gameboard.bottom - 7 end
+    if head.y > gameboard.bottom then head.y = gameboard.top end
     -- add new part of tail
     if new_tail then add(tail, new_tail) end
   end
@@ -119,12 +144,12 @@ function update_game()
       gameover = true
     end
   end)
-  gameover = (gameover
-  			or head.x < 8
-     or head.x > 119
-     or head.y < 8
-     or head.y > 119
-  )
+  foreach(walls, function(pos)
+    if hit(head, pos) then
+      gameover = true
+    end
+  end)
+
   -- fruit check
   if hit(head, fruit) then
     -- Red fruits (sprite 2) grant 3 point
@@ -233,17 +258,12 @@ function draw_snake()
   else
     spr(snake_tail_v_sprite, tail_end.x, tail_end.y, 1, 1, false, true)
   end
-  
-  -- draw fruit
-  if fruit then
-    spr(fruit.kind, fruit.x, fruit.y)
-  end
 end
 
 function _draw()
   -- draw board
-  rectfill(0, 0, 127, 127, 1)
-  rectfill(8, 8, 119, 119, 11)
+  rectfill(header_rect.left, header_rect.top, header_rect.right, header_rect.bottom, header_color)
+  rectfill(gameboard.left, gameboard.top, gameboard.right, gameboard.bottom, bg_color)
   
   -- gameover check
   if gameover then
@@ -253,7 +273,15 @@ function _draw()
   end
 
     -- print points
-  print("score: "..score, 2, 122, 12)
+  print("score: "..score, 1, 1, 12)
 
   draw_snake()
+  -- draw fruit
+  if fruit then
+    spr(fruit.kind, fruit.x, fruit.y)
+  end
+  -- draw walls
+  foreach (walls, function (wall)
+    spr(wall_sprite, wall.x, wall.y)
+  end)
 end
